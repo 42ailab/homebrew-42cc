@@ -1,0 +1,89 @@
+# 自动检查并更新 Cask 版本
+# 每天北京时间凌晨 3 点检查 version.json，如有新版本则自动更新 Cask 文件
+
+name: Auto Update Cask
+
+on:
+  schedule:
+    # 每天北京时间凌晨 3 点（UTC 19:00）
+    - cron: '0 19 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch version.json
+        id: fetch
+        run: |
+          # 获取远程版本信息
+          VERSION_JSON=$(curl -s "https://get.42plugin.com/42cc/version.json")
+
+          # 解析 JSON
+          REMOTE_VERSION=$(echo "$VERSION_JSON" | jq -r '.version')
+          REMOTE_SHA256=$(echo "$VERSION_JSON" | jq -r '.macos.sha256')
+
+          # 获取当前 Cask 中的版本
+          CURRENT_VERSION=$(grep 'version "' Casks/42cc.rb | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+          echo "remote_version=$REMOTE_VERSION" >> $GITHUB_OUTPUT
+          echo "remote_sha256=$REMOTE_SHA256" >> $GITHUB_OUTPUT
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Remote version: $REMOTE_VERSION"
+          echo "Current version: $CURRENT_VERSION"
+          echo "SHA256: $REMOTE_SHA256"
+
+      - name: Check if update needed
+        id: check
+        run: |
+          if [ "${{ steps.fetch.outputs.remote_version }}" != "${{ steps.fetch.outputs.current_version }}" ]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "New version available: ${{ steps.fetch.outputs.remote_version }}"
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+            echo "Already up to date"
+          fi
+
+      - name: Update Cask file
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.fetch.outputs.remote_version }}"
+          SHA256="${{ steps.fetch.outputs.remote_sha256 }}"
+
+          # 更新 version
+          sed -i "s/version \"[^\"]*\"/version \"$VERSION\"/" Casks/42cc.rb
+
+          # 更新 sha256
+          sed -i "s/sha256 \"[^\"]*\"/sha256 \"$SHA256\"/" Casks/42cc.rb
+
+          echo "Updated Cask to version $VERSION"
+          cat Casks/42cc.rb
+
+      - name: Commit and push
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Casks/42cc.rb
+          git commit -m "chore: update 42cc to ${{ steps.fetch.outputs.remote_version }}"
+          git push
+
+      - name: Create summary
+        run: |
+          if [ "${{ steps.check.outputs.needs_update }}" == "true" ]; then
+            echo "## Updated 42cc Cask" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **New version**: ${{ steps.fetch.outputs.remote_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Previous version**: ${{ steps.fetch.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **SHA256**: \`${{ steps.fetch.outputs.remote_sha256 }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## No update needed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Current version **${{ steps.fetch.outputs.current_version }}** is up to date." >> $GITHUB_STEP_SUMMARY
+          fi

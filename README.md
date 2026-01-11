@@ -38,12 +38,24 @@ brew untap 42ailab/42cc
 
 The Cask file is located at: `Casks/42cc.rb`
 
-Update workflow:
+### Automatic Updates
+
+This repository uses GitHub Actions to automatically update the Cask when a new version is released:
+
+1. The workflow checks `https://get.42plugin.com/42cc/version.json` daily at 3:00 AM (Beijing Time)
+2. If a new version is detected, it automatically updates `version` and `sha256` in the Cask file
+3. Changes are committed and pushed automatically
+
+You can also trigger the update manually from the Actions tab.
+
+### Manual Update
+
+If needed, you can update manually:
+
 1. Build new DMG in the main repository
-2. Upload DMG to GitHub Releases
-3. Calculate SHA256: `shasum -a 256 42cc-x.y.z.dmg`
-4. Update `version` and `sha256` in the Cask file
-5. Commit and push
+2. Upload DMG to CDN: `https://get.42plugin.com/42cc/v{version}/`
+3. Update `version.json` with new version and SHA256
+4. Wait for auto-update, or trigger it manually
 
 ## License
 
