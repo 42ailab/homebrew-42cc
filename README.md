@@ -1,6 +1,6 @@
 # Homebrew Cask Tap for 42cc
 
-Official Homebrew tap for [42cc](https://github.com/42ailab/42cc) - Claude Code model configuration tool.
+Official Homebrew tap for [42cc](https://github.com/42ailab) - Claude Code model configuration tool.
 
 ## Installation
 
@@ -31,8 +31,8 @@ brew untap 42ailab/42cc
 
 ## Documentation
 
-- **Main Project**: https://github.com/42ailab/42cc
-- **Issues**: https://github.com/42ailab/42cc/issues
+- **Main Project**: https://github.com/42ailab
+- **Issues**: https://cnb.cool/42ailab/42plugin/meta/-/issues
 
 ## Cask Maintenance
 
