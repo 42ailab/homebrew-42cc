@@ -1,6 +1,6 @@
 # 42cc 的 Homebrew Cask Tap
 
-[42cc](https://github.com/42ailab) 的官方 Homebrew tap - Claude Code 模型配置工具。
+[42cc](https://42cc.42ailab.com) 的官方 Homebrew tap - Claude Code 模型配置工具。
 
 ## 安装
 
@@ -31,7 +31,7 @@ brew untap 42ailab/42cc
 
 ## 文档
 
-- **主项目**: https://github.com/42ailab
+- **主项目**: https://42cc.42ailab.com
 - **问题反馈**: https://cnb.cool/42ailab/42plugin/meta/-/issues
 
 ## Cask 维护
