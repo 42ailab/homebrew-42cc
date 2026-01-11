@@ -1,62 +1,49 @@
-# Homebrew Cask Tap for 42cc
+# 42cc 的 Homebrew Cask Tap
 
-Official Homebrew tap for [42cc](https://github.com/42ailab) - Claude Code model configuration tool.
+[42cc](https://github.com/42ailab) 的官方 Homebrew tap - Claude Code 模型配置工具。
 
-## Installation
+## 安装
 
 ```bash
-# Add the tap
+# 添加 tap
 brew tap 42ailab/42cc
 
-# Install 42cc
+# 安装 42cc
 brew install --cask 42cc
 
-# Verify installation
+# 验证安装
 open -a 42cc
 ```
 
-## Updating
+## 更新
 
 ```bash
 brew update
 brew upgrade --cask 42cc
 ```
 
-## Uninstallation
+## 卸载
 
 ```bash
 brew uninstall --cask 42cc
 brew untap 42ailab/42cc
 ```
 
-## Documentation
+## 文档
 
-- **Main Project**: https://github.com/42ailab
-- **Issues**: https://cnb.cool/42ailab/42plugin/meta/-/issues
+- **主项目**: https://github.com/42ailab
+- **问题反馈**: https://cnb.cool/42ailab/42plugin/meta/-/issues
 
-## Cask Maintenance
+## Cask 维护
 
-The Cask file is located at: `Casks/42cc.rb`
+Cask 文件位于: `Casks/42cc.rb`
 
-### Automatic Updates
+### 自动更新
 
-This repository uses GitHub Actions to automatically update the Cask when a new version is released:
+本仓库使用 GitHub Actions 在发布新版本时自动更新 Cask:
 
-1. The workflow checks `https://get.42plugin.com/42cc/version.json` daily at 3:00 AM (Beijing Time)
-2. If a new version is detected, it automatically updates `version` and `sha256` in the Cask file
-3. Changes are committed and pushed automatically
+1. 工作流每天北京时间凌晨 3:00 检查 `https://get.42plugin.com/42cc/version.json`
+2. 如果检测到新版本,会自动更新 Cask 文件中的 `version` 和 `sha256`
+3. 更改会自动提交并推送
 
-You can also trigger the update manually from the Actions tab.
-
-### Manual Update
-
-If needed, you can update manually:
-
-1. Build new DMG in the main repository
-2. Upload DMG to CDN: `https://get.42plugin.com/42cc/v{version}/`
-3. Update `version.json` with new version and SHA256
-4. Wait for auto-update, or trigger it manually
-
-## License
-
-Proprietary
+你也可以在 Actions 标签页手动触发更新。
