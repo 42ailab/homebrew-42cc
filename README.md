@@ -38,12 +38,31 @@ brew untap 42ailab/42cc
 
 Cask 文件位于: `Casks/42cc.rb`
 
-### 自动更新
+### 自动更新机制
 
-本仓库使用 GitHub Actions 在发布新版本时自动更新 Cask:
+本仓库使用双重机制确保 Cask 及时更新:
 
-1. 工作流每天北京时间凌晨 3:00 检查 `https://get.42plugin.com/42cc/version.json`
-2. 如果检测到新版本,会自动更新 Cask 文件中的 `version` 和 `sha256`
-3. 更改会自动提交并推送
+#### 1️⃣ **主要方式: Webhook 实时触发** (推荐 ⭐)
 
-你也可以在 Actions 标签页手动触发更新。
+- **触发时机**: 42cc 发布新版本时自动触发
+- **延迟**: < 1 分钟（秒级响应）
+- **工作流**: `.github/workflows/webhook-update.yml`
+- **流程**:
+  1. 42cc 发布流程完成后，自动计算 DMG 的 SHA256
+  2. 发送 `repository_dispatch` webhook 到本仓库
+  3. Webhook 触发 GitHub Actions 自动更新 Cask 文件
+  4. 自动提交 commit: `chore: auto-update to x.x.x (webhook triggered)`
+
+#### 2️⃣ **兜底方式: 定时检测**
+
+- **触发时机**: 每周日北京时间凌晨 3:00
+- **目的**: 确保即使 webhook 失败，也能通过定时任务最终更新
+- **工作流**: `.github/workflows/auto-update.yml`
+- **流程**:
+  1. 检查 `https://get.42plugin.com/42cc/version.json`
+  2. 如果检测到新版本，自动更新 Cask 文件
+  3. 自动提交 commit: `chore: update 42cc to x.x.x (fallback check)`
+
+### 手动触发更新
+
+你也可以在 [Actions 标签页](https://github.com/xlgwr/homebrew-42cc/actions) 手动触发任一工作流。

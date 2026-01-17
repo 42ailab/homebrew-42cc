@@ -1,0 +1,58 @@
+name: Webhook Update Cask
+
+on:
+  repository_dispatch:
+    types: [new-version]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Version Info
+        id: version
+        run: |
+          VERSION="${{ github.event.client_payload.version }}"
+          SHA256="${{ github.event.client_payload.sha256 }}"
+
+          echo "Received version: $VERSION"
+          echo "Received SHA256: $SHA256"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Update Cask File
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256="${{ steps.version.outputs.sha256 }}"
+
+          # 更新版本号
+          sed -i "s/version \"[^\"]*\"/version \"$VERSION\"/" Casks/42cc.rb
+
+          # 更新 SHA256
+          sed -i "s/sha256 \"[^\"]*\"/sha256 \"$SHA256\"/" Casks/42cc.rb
+
+          echo "Updated Cask file:"
+          cat Casks/42cc.rb
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Casks/42cc.rb
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: auto-update to ${{ steps.version.outputs.version }} (webhook triggered)"
+          git push
+
+      - name: Summary
+        run: |
+          echo "✅ Successfully updated 42cc.rb to version ${{ steps.version.outputs.version }}"
+          echo "📦 SHA256: ${{ steps.version.outputs.sha256 }}"
