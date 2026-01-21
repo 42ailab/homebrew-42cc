@@ -1,11 +1,11 @@
 cask "42cc" do
-  version "0.3.15"
-  sha256 "6466e70360e744390afddebaf51319994f92a0e67363a35be104283ba3d6efe2"
+  version "0.3.16"
+  sha256 "ec5541256ae0b723fef86a381e80ec16cfe7f5933eefdb147671ee59d6a93b07"
 
   url "https://get.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
   name "42cc"
   desc "Claude Code model configuration tool"
-  homepage "https://42ailab.com"
+  homepage "https://42cc.42ailab.com"
 
   livecheck do
     url "https://get.42plugin.com/42cc/version.json"
