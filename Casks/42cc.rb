@@ -1,6 +1,6 @@
 cask "42cc" do
-  version "0.5.0"
-  sha256 "3d4d3220bfb8f34b93e022b62fa22007f5f73d37557d7f37089a59f4936badfd"
+  version "0.5.1"
+  sha256 "aed6b6732720c7ce1484f93772ede246d72340f7799a52693741377b5488171f"
 
   url "https://get.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
   name "42cc"
@@ -13,8 +13,6 @@ cask "42cc" do
       json["version"]
     end
   end
-
-  depends_on macos: ">= :high_sierra"
 
   app "42cc.app"
 

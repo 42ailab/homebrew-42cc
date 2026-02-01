@@ -1,13 +1,13 @@
 # 自动检查并更新 Cask 版本（兜底机制）
-# 每周日北京时间凌晨 3 点检查 version.json，作为 webhook 触发的兜底
+# 每天北京时间凌晨 3 点检查 version.json，作为 webhook 触发的兜底
 # 主要更新方式：通过发布流程的 webhook 实时触发（见 webhook-update.yml）
 
 name: Auto Update Cask (Fallback)
 
 on:
   schedule:
-    # 每周日北京时间凌晨 3 点（UTC 19:00）作为兜底检测
-    - cron: '0 19 * * 0'
+    # 每天北京时间凌晨 3 点（UTC 19:00）作为兜底检测
+    - cron: '0 19 * * *'
   workflow_dispatch:  # 允许手动触发
 
 jobs:
