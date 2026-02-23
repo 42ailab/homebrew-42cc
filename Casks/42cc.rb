@@ -1,5 +1,5 @@
 cask "42cc" do
-  version "0.7.0"
+  version "0.7.1"
   sha256 "fdb0241fbcb5b1baec94d24946534254448e6b7695c3b728701026eb0ba06ddb"
 
   url "https://get.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
