@@ -28,26 +28,34 @@ jobs:
           REMOTE_VERSION=$(echo "$VERSION_JSON" | jq -r '.version')
           REMOTE_SHA256=$(echo "$VERSION_JSON" | jq -r '.macos.sha256')
 
-          # 获取当前 Cask 中的版本
+          # 获取当前 Cask 中的版本和 SHA256
           CURRENT_VERSION=$(grep 'version "' Casks/42cc.rb | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          CURRENT_SHA256=$(grep 'sha256 "' Casks/42cc.rb | head -1 | sed 's/.*"\(.*\)".*/\1/')
 
           echo "remote_version=$REMOTE_VERSION" >> $GITHUB_OUTPUT
           echo "remote_sha256=$REMOTE_SHA256" >> $GITHUB_OUTPUT
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "current_sha256=$CURRENT_SHA256" >> $GITHUB_OUTPUT
 
           echo "Remote version: $REMOTE_VERSION"
           echo "Current version: $CURRENT_VERSION"
-          echo "SHA256: $REMOTE_SHA256"
+          echo "Remote SHA256: $REMOTE_SHA256"
+          echo "Current SHA256: $CURRENT_SHA256"
 
       - name: Check if update needed
         id: check
         run: |
-          if [ "${{ steps.fetch.outputs.remote_version }}" != "${{ steps.fetch.outputs.current_version }}" ]; then
+          REMOTE_VERSION="${{ steps.fetch.outputs.remote_version }}"
+          CURRENT_VERSION="${{ steps.fetch.outputs.current_version }}"
+          REMOTE_SHA256="${{ steps.fetch.outputs.remote_sha256 }}"
+          CURRENT_SHA256="${{ steps.fetch.outputs.current_sha256 }}"
+
+          if [ "$REMOTE_VERSION" != "$CURRENT_VERSION" ] || [ "$REMOTE_SHA256" != "$CURRENT_SHA256" ]; then
             echo "needs_update=true" >> $GITHUB_OUTPUT
-            echo "New version available: ${{ steps.fetch.outputs.remote_version }}"
+            echo "Update needed: version=$REMOTE_VERSION sha256=$REMOTE_SHA256"
           else
             echo "needs_update=false" >> $GITHUB_OUTPUT
-            echo "Already up to date"
+            echo "Already up to date (version=$CURRENT_VERSION, sha256 matches)"
           fi
 
       - name: Update Cask file
@@ -72,7 +80,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add Casks/42cc.rb
-          git commit -m "chore: update 42cc to ${{ steps.fetch.outputs.remote_version }} (fallback check)"
+          git commit -m "chore: sync 42cc to ${{ steps.fetch.outputs.remote_version }} (fallback check)"
           git push
 
       - name: Create summary
@@ -86,5 +94,5 @@ jobs:
           else
             echo "## No update needed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Current version **${{ steps.fetch.outputs.current_version }}** is up to date." >> $GITHUB_STEP_SUMMARY
+            echo "Version **${{ steps.fetch.outputs.current_version }}** and SHA256 are both up to date." >> $GITHUB_STEP_SUMMARY
           fi
