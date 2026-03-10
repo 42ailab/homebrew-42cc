@@ -2,13 +2,13 @@ cask "42cc" do
   version ""
   sha256 ""
 
-  url "https://get.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
+  url "https://cdn.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
   name "42cc"
   desc "Claude Code model configuration tool"
   homepage "https://42cc.42ailab.com"
 
   livecheck do
-    url "https://get.42plugin.com/42cc/version.json"
+    url "https://cdn.42plugin.com/42cc/version.json"
     strategy :json do |json|
       json["version"]
     end
