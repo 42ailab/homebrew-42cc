@@ -22,7 +22,7 @@ jobs:
         id: fetch
         run: |
           # 获取远程版本信息
-          VERSION_JSON=$(curl -s "https://get.42plugin.com/42cc/version.json")
+          VERSION_JSON=$(curl -s "https://cdn.42plugin.com/42cc/version.json")
 
           # 解析 JSON
           REMOTE_VERSION=$(echo "$VERSION_JSON" | jq -r '.version')
