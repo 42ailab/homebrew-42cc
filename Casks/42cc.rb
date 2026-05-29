@@ -1,6 +1,6 @@
 cask "42cc" do
-  version "0.8.3"
-  sha256 "700f6fe08ae590e724bf1da753ddd900f2a904d0f346627ffc29a28ab2fd0c28"
+  version "0.8.4"
+  sha256 "374cc1a8fca0cca99ddc0ba2715312dc0d2aa9e1be5e51455df6a16cd5935cda"
 
   url "https://cdn.42plugin.com/42cc/v#{version}/42cc-#{version}.dmg"
   name "42cc"
