@@ -11,33 +11,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Version Info
-        id: version
-        run: |
-          VERSION="${{ github.event.client_payload.version }}"
-          SHA256="${{ github.event.client_payload.sha256 }}"
+      - name: Update and verify cask
+        # payload 经 env 中转，不直接内插进 shell，防注入；
+        # 格式校验 / CDN 实测 sha256 / ruby 语法检查都在脚本内
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          SHA256: ${{ github.event.client_payload.sha256 }}
+        run: ./scripts/update-cask.sh "$VERSION" "$SHA256"
 
-          echo "Received version: $VERSION"
-          echo "Received SHA256: $SHA256"
-
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
-
-      - name: Update Cask File
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          SHA256="${{ steps.version.outputs.sha256 }}"
-
-          # 更新版本号
-          sed -i "s/version \"[^\"]*\"/version \"$VERSION\"/" Casks/42cc.rb
-
-          # 更新 SHA256
-          sed -i "s/sha256 \"[^\"]*\"/sha256 \"$SHA256\"/" Casks/42cc.rb
-
-          echo "Updated Cask file:"
-          cat Casks/42cc.rb
-
-      - name: Commit and Push
+      - name: Commit and push
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -49,10 +33,15 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: auto-update to ${{ steps.version.outputs.version }} (webhook triggered)"
+          git commit -m "chore: auto-update to $VERSION (webhook triggered)"
           git push
 
       - name: Summary
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          SHA256: ${{ github.event.client_payload.sha256 }}
         run: |
-          echo "✅ Successfully updated 42cc.rb to version ${{ steps.version.outputs.version }}"
-          echo "📦 SHA256: ${{ steps.version.outputs.sha256 }}"
+          echo "## Updated 42cc Cask (webhook)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA256**: \`$SHA256\` (verified against CDN artifact)" >> $GITHUB_STEP_SUMMARY

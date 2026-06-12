@@ -1,6 +1,7 @@
 # 自动检查并更新 Cask 版本（兜底机制）
 # 每天北京时间凌晨 3 点检查 version.json，作为 webhook 触发的兜底
 # 主要更新方式：通过发布流程的 webhook 实时触发（见 webhook-update.yml）
+# 更新逻辑（格式校验 / CDN 实测 sha256 / ruby 语法检查）与 webhook 共用 scripts/update-cask.sh
 
 name: Auto Update Cask (Fallback)
 
@@ -18,60 +19,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch version.json
-        id: fetch
+      - name: Fetch version.json and compare
+        id: check
         run: |
-          # 获取远程版本信息
-          VERSION_JSON=$(curl -s "https://cdn.42plugin.com/42cc/version.json")
+          VERSION_JSON=$(curl -fsSL "https://cdn.42plugin.com/42cc/version.json")
 
-          # 解析 JSON
-          REMOTE_VERSION=$(echo "$VERSION_JSON" | jq -r '.version')
-          REMOTE_SHA256=$(echo "$VERSION_JSON" | jq -r '.macos.sha256')
+          REMOTE_VERSION=$(echo "$VERSION_JSON" | jq -er '.version')
+          REMOTE_SHA256=$(echo "$VERSION_JSON" | jq -er '.macos.sha256')
 
-          # 获取当前 Cask 中的版本和 SHA256
-          CURRENT_VERSION=$(grep 'version "' Casks/42cc.rb | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          CURRENT_SHA256=$(grep 'sha256 "' Casks/42cc.rb | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          CURRENT_VERSION=$(grep '^  version "' Casks/42cc.rb | sed 's/.*"\(.*\)".*/\1/')
+          CURRENT_SHA256=$(grep '^  sha256 "' Casks/42cc.rb | sed 's/.*"\(.*\)".*/\1/')
+
+          echo "Remote:  version=$REMOTE_VERSION sha256=$REMOTE_SHA256"
+          echo "Current: version=$CURRENT_VERSION sha256=$CURRENT_SHA256"
 
           echo "remote_version=$REMOTE_VERSION" >> $GITHUB_OUTPUT
           echo "remote_sha256=$REMOTE_SHA256" >> $GITHUB_OUTPUT
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "current_sha256=$CURRENT_SHA256" >> $GITHUB_OUTPUT
-
-          echo "Remote version: $REMOTE_VERSION"
-          echo "Current version: $CURRENT_VERSION"
-          echo "Remote SHA256: $REMOTE_SHA256"
-          echo "Current SHA256: $CURRENT_SHA256"
-
-      - name: Check if update needed
-        id: check
-        run: |
-          REMOTE_VERSION="${{ steps.fetch.outputs.remote_version }}"
-          CURRENT_VERSION="${{ steps.fetch.outputs.current_version }}"
-          REMOTE_SHA256="${{ steps.fetch.outputs.remote_sha256 }}"
-          CURRENT_SHA256="${{ steps.fetch.outputs.current_sha256 }}"
 
           if [ "$REMOTE_VERSION" != "$CURRENT_VERSION" ] || [ "$REMOTE_SHA256" != "$CURRENT_SHA256" ]; then
             echo "needs_update=true" >> $GITHUB_OUTPUT
-            echo "Update needed: version=$REMOTE_VERSION sha256=$REMOTE_SHA256"
           else
             echo "needs_update=false" >> $GITHUB_OUTPUT
-            echo "Already up to date (version=$CURRENT_VERSION, sha256 matches)"
           fi
 
-      - name: Update Cask file
+      - name: Update and verify cask
         if: steps.check.outputs.needs_update == 'true'
-        run: |
-          VERSION="${{ steps.fetch.outputs.remote_version }}"
-          SHA256="${{ steps.fetch.outputs.remote_sha256 }}"
-
-          # 更新 version
-          sed -i "s/version \"[^\"]*\"/version \"$VERSION\"/" Casks/42cc.rb
-
-          # 更新 sha256
-          sed -i "s/sha256 \"[^\"]*\"/sha256 \"$SHA256\"/" Casks/42cc.rb
-
-          echo "Updated Cask to version $VERSION"
-          cat Casks/42cc.rb
+        run: ./scripts/update-cask.sh "${{ steps.check.outputs.remote_version }}" "${{ steps.check.outputs.remote_sha256 }}"
 
       - name: Commit and push
         if: steps.check.outputs.needs_update == 'true'
@@ -80,19 +54,25 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add Casks/42cc.rb
-          git commit -m "chore: sync 42cc to ${{ steps.fetch.outputs.remote_version }} (fallback check)"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: sync 42cc to ${{ steps.check.outputs.remote_version }} (fallback check)"
           git push
 
       - name: Create summary
         run: |
           if [ "${{ steps.check.outputs.needs_update }}" == "true" ]; then
-            echo "## Updated 42cc Cask" >> $GITHUB_STEP_SUMMARY
+            echo "## Updated 42cc Cask (fallback)" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **New version**: ${{ steps.fetch.outputs.remote_version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Previous version**: ${{ steps.fetch.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **SHA256**: \`${{ steps.fetch.outputs.remote_sha256 }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **New version**: ${{ steps.check.outputs.remote_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Previous version**: ${{ steps.check.outputs.current_version }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **SHA256**: \`${{ steps.check.outputs.remote_sha256 }}\` (verified against CDN artifact)" >> $GITHUB_STEP_SUMMARY
           else
             echo "## No update needed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Version **${{ steps.fetch.outputs.current_version }}** and SHA256 are both up to date." >> $GITHUB_STEP_SUMMARY
+            echo "Version **${{ steps.check.outputs.current_version }}** and SHA256 are both up to date." >> $GITHUB_STEP_SUMMARY
           fi
